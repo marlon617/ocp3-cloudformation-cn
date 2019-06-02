@@ -1,0 +1,84 @@
+#Create an OSEv3 group that contains the masters, nodes, and etcd groups
+[OSEv3:children]
+masters
+nodes
+etcd
+
+# Set variables common for all OSEv3 hosts
+[OSEv3:vars]
+# SSH user, this user should allow ssh based auth without requiring a password
+ansible_ssh_user=ec2-user
+
+# If ansible_ssh_user is not root, ansible_become must be set to true
+ansible_become=true
+
+openshift_deployment_type=openshift-enterprise
+openshift_image_tag=v3.11.59
+openshift_pkg_version=-3.11.59
+openshift_clock_enabled=true
+
+openshift_clusterid=openshift
+openshift_cloudprovider_kind=aws
+
+openshift_hosted_router_replicas=2
+openshift_router_selector='router_node=true'
+openshift_hosted_registry_replicas=2
+openshift_registry_selector='registry_node=true'
+openshift_hosted_registry_storage_kind: object
+openshift_hosted_registry_storage_provider: s3
+openshift_hosted_registry_storage_s3_bucket: ocp-cn-registrybucket-1nezflkmzff1h
+openshift_hosted_registry_storage_s3_chunksize: 26214400
+openshift_hosted_registry_storage_s3_region: cn-northwest-1
+openshift_hosted_registry_storage_s3_rootdirectory: /registry
+
+
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=ocp-c-OpenS-1RP7LWAUCDVRR-247a010caeffffff.elb.cn-northwest-1.amazonaws.com.cn
+openshift_master_cluster_public_hostname=ocp-cn-OpenShiftMa-1ABB8P3R66NNV-1454836590.cn-northwest-1.elb.amazonaws.com.cn
+openshift_master_default_subdomain=apps.awscloud.com
+openshift_docker_options="--selinux-enabled --insecure-registry 172.30.0.0/16 --log-driver json-file --log-opt max-size=50M --log-opt max-file=3"
+
+oreg_url=registry.access.redhat.com/openshift3/ose-${component}:${version}
+openshift_examples_modify_imagestreams=true
+
+#install andon later
+openshift_metrics_install_metrics=false
+openshift_enable_service_catalog=false
+ansible_service_broker_install=false
+openshift_cluster_monitoring_operator_install=false
+openshift_logging_install_logging=false
+
+
+#set cert expire days
+openshift_ca_cert_expire_days=3600
+openshift_node_cert_expire_days=3600
+openshift_master_cert_expire_days=3600
+
+
+# uncomment the following to enable htpasswd authentication; defaults to DenyAllPasswordIdentityProvider
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+
+openshift_disable_check="disk_availability,docker_image_availability,memory_availability,docker_storage,package_version"
+
+openshift_node_groups=[{'name': 'node-config-master', 'labels': ['node-role.kubernetes.io/master=true']}, {'name': 'node-config-compute-infra', 'labels': ['node-role.kubernetes.io/infra=true', 'node-role.kubernetes.io/compute=true', 'registry_node=true', 'router_node=true']}, {'name': 'node-config-compute', 'labels': ['node-role.kubernetes.io/compute=true']}, {'name': 'node-config-infra', 'labels': ['node-role.kubernetes.io/infra=true', 'registry_node=true', 'router_node=true']}]
+
+# host group for masters
+[masters]
+ip-10-0-71-186.cn-northwest-1.compute.internal
+ip-10-0-38-143.cn-northwest-1.compute.internal
+ip-10-0-25-63.cn-northwest-1.compute.internal
+
+# host group for etcd
+[etcd]
+ip-10-0-76-50.cn-northwest-1.compute.internal
+ip-10-0-14-194.cn-northwest-1.compute.internal
+ip-10-0-61-248.cn-northwest-1.compute.internal
+
+# host group for nodes, includes region info
+[nodes]
+ip-10-0-71-186.cn-northwest-1.compute.internal openshift_node_group_name='node-config-master'
+ip-10-0-38-143.cn-northwest-1.compute.internal openshift_node_group_name='node-config-master'
+ip-10-0-25-63.cn-northwest-1.compute.internal openshift_node_group_name='node-config-master'
+ip-10-0-86-46.cn-northwest-1.compute.internal openshift_node_group_name='node-config-infra-compute'
+ip-10-0-30-103.cn-northwest-1.compute.internal openshift_node_group_name='node-config-infra-compute'
+ip-10-0-42-37.cn-northwest-1.compute.internal openshift_node_group_name='node-config-compute'
